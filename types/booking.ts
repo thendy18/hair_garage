@@ -11,6 +11,9 @@ export interface TimeSlot {
 }
 
 export interface BookingFormData {
+  selectedService: string;
+  selectedCategory: string;
+  selectedHairstylist: string;
   selectedSlotId: string;
   clientName: string;
   clientPhone: string;

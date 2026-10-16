@@ -30,8 +30,8 @@ export async function updateSession(request: NextRequest) {
   const isAdmin = Boolean(
     adminEmail && claims?.email?.toLowerCase() === adminEmail,
   );
-  const isLoginPage = request.nextUrl.pathname === "/cek/login";
-  const isProtectedPage = request.nextUrl.pathname === "/cek";
+  const isLoginPage = request.nextUrl.pathname === "/admin/login";
+  const isProtectedPage = request.nextUrl.pathname === "/admin";
 
   if (isProtectedPage && !isAdmin) {
     if (hasClaims) {
@@ -39,13 +39,13 @@ export async function updateSession(request: NextRequest) {
     }
 
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/cek/login";
-    loginUrl.searchParams.set("next", "/cek");
+    loginUrl.pathname = "/admin/login";
+    loginUrl.searchParams.set("next", "/admin");
     return NextResponse.redirect(loginUrl);
   }
 
   if (isAdmin && isLoginPage) {
-    return NextResponse.redirect(new URL("/cek", request.url));
+    return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   return supabaseResponse;

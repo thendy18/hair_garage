@@ -52,7 +52,7 @@ const parseTime = (time: string) => {
 const shortPhone = (phone: string) =>
   phone.length > 11 ? `${phone.slice(0, 8)}xxxx` : phone;
 
-export default function CekPage() {
+export default function AdminPage() {
   const today = new Date();
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [selectedDate, setSelectedDate] = useState(toDateInput(today));
@@ -67,7 +67,6 @@ export default function CekPage() {
     [weekStart],
   );
   const weekEnd = weekDays[6];
-  const monthLabel = formatMonth(weekStart);
 
   useEffect(() => {
     const loadSlots = async () => {
@@ -88,11 +87,6 @@ export default function CekPage() {
     void loadSlots();
   }, []);
 
-  const navigateWeek = (offset: number) => {
-    setWeekStart(addDays(weekStart, offset * 7));
-    setSelectedSlot(null);
-  };
-
   const selectDate = (date: Date) => {
     const dateValue = toDateInput(date);
     setSelectedDate(dateValue);
@@ -100,6 +94,14 @@ export default function CekPage() {
   };
 
   const goToday = () => selectDate(new Date());
+
+  const selectMonth = (value: string) => {
+    if (!value) return;
+    const monthDate = new Date(`${value}-01T00:00:00`);
+    setWeekStart(startOfWeek(monthDate));
+    setSelectedDate(toDateInput(monthDate));
+    setSelectedSlot(null);
+  };
 
   const addSlot = async () => {
     if (!selectedDate || parseTime(endTime) <= parseTime(startTime)) {
@@ -184,7 +186,7 @@ export default function CekPage() {
 
   const handleLogout = async () => {
     await createClient().auth.signOut();
-    window.location.assign("/cek/login");
+    window.location.assign("/admin/login");
   };
 
   const slotsForDate = (date: Date) =>
@@ -204,34 +206,30 @@ export default function CekPage() {
   }, [weekStart]);
 
   return (
-    <main className="min-h-screen bg-[#f8fafd] text-neutral-900">
+    <main className="min-h-screen bg-[#f3f4f6] text-black">
       <div className="mx-auto flex min-h-screen max-w-[1600px]">
-        <aside className="hidden w-64 shrink-0 border-r border-neutral-200 bg-white px-5 py-6 lg:block">
+        <aside className="hidden w-64 shrink-0 border-r-4 border-black bg-white px-5 py-6 lg:block">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-neutral-900 text-sm font-bold text-white">
+            <div className="grid h-10 w-10 place-items-center border-2 border-black bg-zinc-900 text-sm font-bold text-white">
               TH
             </div>
             <div>
-              <p className="text-sm font-semibold">Thendy Garage</p>
-              <p className="text-xs text-neutral-400">Workspace</p>
+            <p className="text-sm font-black uppercase">Thendy Garage</p>
+              <p className="text-xs font-bold uppercase text-neutral-500">Admin workspace</p>
             </div>
           </div>
 
           <button
             type="button"
             onClick={goToday}
-            className="mt-8 w-full rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium transition hover:bg-neutral-50"
+            className="mt-8 w-full border-2 border-black px-4 py-2 text-sm font-bold uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
           >
             Today
           </button>
 
           <div className="mt-8">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold capitalize">{formatMonth(weekStart)}</p>
-              <div className="flex gap-1">
-                <button type="button" onClick={() => navigateWeek(-1)} aria-label="Bulan sebelumnya" className="grid h-7 w-7 place-items-center rounded-full text-lg text-neutral-500 hover:bg-neutral-100">&#8249;</button>
-                <button type="button" onClick={() => navigateWeek(1)} aria-label="Bulan berikutnya" className="grid h-7 w-7 place-items-center rounded-full text-lg text-neutral-500 hover:bg-neutral-100">&#8250;</button>
-              </div>
+              <p className="text-sm font-black uppercase">{formatMonth(weekStart)}</p>
             </div>
             <div className="mt-4 grid grid-cols-7 gap-y-3 text-center text-[10px]">
               {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
@@ -244,7 +242,7 @@ export default function CekPage() {
                 const hasSlots = slotsForDate(date).length > 0;
                 const isSelected = selectedDate === dateValue;
                 return (
-                  <button key={dateValue} type="button" onClick={() => selectDate(date)} className={`relative mx-auto grid h-6 w-6 place-items-center rounded-full ${isSelected ? "bg-neutral-900 text-white" : "hover:bg-neutral-100"}`}>
+                    <button key={dateValue} type="button" onClick={() => selectDate(date)} className={`relative mx-auto grid h-6 w-6 place-items-center border-2 border-transparent font-bold ${isSelected ? "border-black bg-zinc-900 text-white" : "hover:border-black hover:bg-neutral-100"}`}>
                     {index + 1}
                     {hasSlots && !isSelected && <span className="absolute bottom-0 h-1 w-1 rounded-full bg-emerald-500" />}
                   </button>
@@ -253,58 +251,81 @@ export default function CekPage() {
             </div>
           </div>
 
-          <button type="button" onClick={() => void handleLogout()} className="mt-10 text-xs text-neutral-400 underline underline-offset-4">Keluar</button>
+          <button type="button" onClick={() => void handleLogout()} className="mt-10 text-xs font-bold uppercase underline underline-offset-4">Keluar</button>
         </aside>
 
         <section className="min-w-0 flex-1 bg-white">
-          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-200 px-5 py-5 sm:px-8">
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={goToday} className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-50 lg:hidden">Today</button>
-              <div className="flex items-center gap-1">
-                <button type="button" onClick={() => navigateWeek(-1)} aria-label="Minggu sebelumnya" className="grid h-9 w-9 place-items-center rounded-full text-xl text-neutral-500 hover:bg-neutral-100">&#8249;</button>
-                <button type="button" onClick={() => navigateWeek(1)} aria-label="Minggu berikutnya" className="grid h-9 w-9 place-items-center rounded-full text-xl text-neutral-500 hover:bg-neutral-100">&#8250;</button>
+          <header className="border-b-4 border-black px-4 py-4 sm:px-8 sm:py-5">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500">Thendy Hair Garage</p>
+                <h1 className="mt-1 text-xl font-black uppercase tracking-[-0.03em] sm:text-2xl">Schedule</h1>
               </div>
-              <h1 className="text-xl font-semibold capitalize tracking-[-0.03em] sm:text-2xl">{monthLabel}</h1>
+              <button type="button" onClick={() => void handleLogout()} className="border-2 border-black px-3 py-2 text-xs font-bold uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none lg:hidden">Keluar</button>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="hidden text-sm text-neutral-400 sm:inline">{formatLongDate(toDateInput(today))}</span>
-              <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-medium">Week</span>
+            <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+              <label className="grid flex-1 gap-1 text-[10px] font-bold uppercase tracking-[0.08em] sm:flex-none sm:text-xs">
+                Pilih bulan
+                <input type="month" value={`${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}`} onChange={(event) => selectMonth(event.target.value)} className="w-full border-2 border-black bg-white px-2 py-2 text-sm font-black uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] outline-none focus:translate-x-[1px] focus:translate-y-[1px] focus:shadow-none sm:w-auto" />
+              </label>
+              <button type="button" onClick={goToday} className="border-2 border-black px-3 py-2 text-xs font-bold uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none">Today</button>
             </div>
           </header>
 
-          <div className="border-b border-neutral-200 bg-neutral-50 px-5 py-4 sm:px-8">
-            <div className="flex flex-wrap items-end gap-3">
-              <label className="grid gap-1 text-xs font-medium text-neutral-500">
+          <div className="border-b-4 border-black bg-neutral-100 px-4 py-4 sm:px-8">
+            <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
+              <label className="col-span-2 grid gap-1 text-xs font-bold uppercase">
                 Tanggal
-                <input type="date" value={selectedDate} onChange={(event) => selectDate(fromDateInput(event.target.value))} className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700 outline-none focus:border-neutral-900" />
+                <input type="date" value={selectedDate} onChange={(event) => selectDate(fromDateInput(event.target.value))} className="w-full rounded-none border-2 border-black bg-white px-3 py-2 text-xs text-black outline-none focus:bg-neutral-200 sm:w-auto" />
               </label>
-              <label className="grid gap-1 text-xs font-medium text-neutral-500">
+              <label className="grid gap-1 text-xs font-bold uppercase">
                 Mulai
-                <input type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700 outline-none focus:border-neutral-900" />
+                <input type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} className="w-full rounded-none border-2 border-black bg-white px-3 py-2 text-xs text-black outline-none focus:bg-neutral-200 sm:w-auto" />
               </label>
-              <label className="grid gap-1 text-xs font-medium text-neutral-500">
+              <label className="grid gap-1 text-xs font-bold uppercase">
                 Selesai
-                <input type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700 outline-none focus:border-neutral-900" />
+                <input type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} className="w-full rounded-none border-2 border-black bg-white px-3 py-2 text-xs text-black outline-none focus:bg-neutral-200 sm:w-auto" />
               </label>
-              <button type="button" onClick={() => void addSlot()} className="rounded-xl bg-neutral-900 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-neutral-700">
+              <button type="button" onClick={() => void addSlot()} className="col-span-2 border-2 border-black bg-zinc-900 px-4 py-2.5 text-xs font-bold uppercase text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none sm:col-span-1">
                 + Buat slot
               </button>
             </div>
-            <p className="mt-2 text-xs text-neutral-400">
+            <p className="mt-2 text-xs font-medium text-neutral-600">
               Atur rentang waktu bebas, misalnya 13:00 sampai 14:30. Hapus slot dari panel detail dengan tombol ×.
             </p>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="grid gap-4 bg-[#f3f4f6] px-4 py-5 lg:hidden">
+            {weekDays.map((day) => {
+              const daySlots = slotsForDate(day);
+              return (
+                <div key={toDateInput(day)} className={`border-2 border-black bg-white p-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${selectedDate === toDateInput(day) ? "border-4" : ""}`}>
+                  <div className="flex items-center justify-between border-b-2 border-black pb-2">
+                    <button type="button" onClick={() => selectDate(day)} className="min-w-0 text-left text-sm font-black uppercase leading-5">{formatLongDate(toDateInput(day))}</button>
+                    <span className="shrink-0 text-[10px] font-bold uppercase">{daySlots.length} slot</span>
+                  </div>
+                  <div className="mt-3 grid gap-2">
+                    {daySlots.length ? daySlots.map((slot) => (
+                      <button key={slot.id} type="button" onClick={() => { setSelectedSlot(slot); setSelectedDate(slot.date); }} className={`flex min-h-12 items-center justify-between gap-3 border-2 border-black px-3 py-3 text-left text-sm font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${selectedSlot?.id === slot.id ? "bg-zinc-900 text-white" : slot.isBooked ? "bg-neutral-200" : "bg-white"}`}>
+                        <span>{slot.timeStart}–{slot.timeEnd} WIB</span><span className="truncate text-right text-[10px] uppercase">{slot.isBooked ? slot.clientName : "READY"}</span>
+                      </button>
+                    )) : <p className="text-xs font-medium text-neutral-500">Belum ada slot di hari ini.</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="hidden overflow-x-auto lg:block">
             <div className="min-w-[760px]">
               <div className="grid grid-cols-[64px_repeat(7,minmax(100px,1fr))] border-b border-neutral-200">
                 <div />
                 {weekDays.map((day) => {
                   const isToday = toDateInput(day) === toDateInput(today);
                   return (
-                    <button key={toDateInput(day)} type="button" onClick={() => selectDate(day)} className="border-l border-neutral-100 px-2 py-4 text-center hover:bg-neutral-50">
+                    <button key={toDateInput(day)} type="button" onClick={() => selectDate(day)} className={`border-2 px-2 py-4 text-center font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none ${selectedDate === toDateInput(day) ? "border-black bg-zinc-900 text-white" : "border-black bg-white hover:bg-neutral-100"}`}>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-400">{formatDayName(day)}</p>
-                      <p className={`mx-auto mt-1 grid h-9 w-9 place-items-center rounded-full text-lg ${isToday ? "bg-blue-600 font-semibold text-white" : "text-neutral-900"}`}>{day.getDate()}</p>
+                      <p className={`mx-auto mt-1 grid h-9 w-9 place-items-center border-2 text-lg ${isToday ? "border-current" : "border-transparent"}`}>{day.getDate()}</p>
                     </button>
                   );
                 })}
@@ -328,7 +349,7 @@ export default function CekPage() {
                             key={slot.id}
                             type="button"
                             onClick={() => { setSelectedSlot(slot); setSelectedDate(slot.date); }}
-                            className={`absolute left-1 right-1 overflow-hidden rounded-lg border-l-4 px-2 py-1.5 text-left text-xs shadow-sm transition hover:shadow-md ${slot.isBooked ? "border-blue-500 bg-blue-50 text-blue-950" : "border-emerald-500 bg-emerald-50 text-emerald-950"} ${isActive ? "ring-2 ring-neutral-900 ring-offset-1" : ""}`}
+                            className={`absolute left-1 right-1 overflow-hidden border-2 border-black px-2 py-1.5 text-left text-xs shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none ${slot.isBooked ? "bg-neutral-300 text-black" : "bg-white text-black"} ${isActive ? "ring-2 ring-black ring-offset-1" : ""}`}
                             style={{
                               top: `${Math.max(top, 2)}px`,
                               minHeight: `${Math.max((parseTime(slot.timeEnd) - parseTime(slot.timeStart)) * 1, 46)}px`,
@@ -346,32 +367,32 @@ export default function CekPage() {
             </div>
           </div>
 
-          <div className="border-t border-neutral-200 px-5 py-5 sm:px-8">
+          <div className="border-t-4 border-black px-4 py-5 sm:px-8">
             {isLoading ? (
-              <p className="text-sm text-neutral-400">Memuat jadwal...</p>
+              <p className="text-sm font-bold uppercase">Memuat jadwal...</p>
             ) : selectedSlot ? (
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className={`h-2.5 w-2.5 rounded-full ${selectedSlot.isBooked ? "bg-blue-500" : "bg-emerald-500"}`} />
-                    <p className="text-sm font-semibold">{selectedSlot.timeStart}–{selectedSlot.timeEnd} WIB / {formatLongDate(selectedSlot.date)}</p>
+                    <span className={`h-3 w-3 border-2 border-black ${selectedSlot.isBooked ? "bg-neutral-500" : "bg-white"}`} />
+                    <p className="text-sm font-bold">{selectedSlot.timeStart}–{selectedSlot.timeEnd} WIB / {formatLongDate(selectedSlot.date)}</p>
                   </div>
-                  <p className="mt-2 text-sm text-neutral-500">{selectedSlot.isBooked ? `${selectedSlot.clientName} (${shortPhone(selectedSlot.clientPhone)})` : "Slot masih tersedia"}</p>
-                  {selectedSlot.isBooked && selectedSlot.clientNotes && <p className="mt-1 text-xs text-neutral-400">{selectedSlot.clientNotes}</p>}
+                  <p className="mt-2 text-sm font-medium text-neutral-600">{selectedSlot.isBooked ? `${selectedSlot.clientName} (${shortPhone(selectedSlot.clientPhone)})` : "Slot masih tersedia"}</p>
+                  {selectedSlot.isBooked && selectedSlot.clientNotes && <p className="mt-1 text-xs text-neutral-500">{selectedSlot.clientNotes}</p>}
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs">
                   {selectedSlot.isBooked ? (
                     <>
-                      <button type="button" onClick={() => chatClient(selectedSlot)} className="rounded-full bg-neutral-900 px-4 py-2 font-medium text-white hover:bg-neutral-700">Chat WhatsApp</button>
-                      <button type="button" onClick={() => void cancelBooking(selectedSlot.id)} className="rounded-full border border-neutral-300 px-4 py-2 font-medium hover:border-neutral-900">Batalkan</button>
+                      <button type="button" onClick={() => chatClient(selectedSlot)} className="border-2 border-black bg-zinc-900 px-4 py-2 font-bold uppercase text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none">Chat WhatsApp</button>
+                      <button type="button" onClick={() => void cancelBooking(selectedSlot.id)} className="border-2 border-black px-4 py-2 font-bold uppercase hover:bg-neutral-100">Batalkan</button>
                     </>
                   ) : (
-                    <button type="button" onClick={() => void removeSlot(selectedSlot.id)} className="rounded-full border border-red-200 px-4 py-2 font-medium text-red-600 hover:border-red-500">× Hapus slot</button>
+                    <button type="button" onClick={() => void removeSlot(selectedSlot.id)} className="border-2 border-black px-4 py-2 font-bold uppercase hover:bg-red-100">× Hapus slot</button>
                   )}
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-neutral-400">Pilih event atau tambahkan slot untuk melihat detail.</p>
+              <p className="text-sm font-medium text-neutral-500">Pilih event atau tambahkan slot untuk melihat detail.</p>
             )}
           </div>
         </section>
