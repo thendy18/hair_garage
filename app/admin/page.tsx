@@ -15,6 +15,8 @@ const toDateInput = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const getTodayKey = () => toDateInput(new Date());
+
 const fromDateInput = (date: string) => new Date(`${date}T00:00:00`);
 
 const startOfWeek = (date: Date) => {
@@ -70,9 +72,13 @@ export default function AdminPage() {
 
   useEffect(() => {
     const loadSlots = async () => {
+      // Old sessions are no longer useful for the live schedule.
+      await createClient().from("time_slots").delete().lt("date", getTodayKey());
+
       const { data, error } = await createClient()
         .from("time_slots")
         .select("*")
+        .gte("date", getTodayKey())
         .order("date")
         .order("time_start");
 

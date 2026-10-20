@@ -17,6 +17,10 @@ const formatMonth = (date: Date) => new Intl.DateTimeFormat("id-ID", { month: "l
 const getMinutes = (time: string) => { const [hours, minutes] = time.split(":").map(Number); return hours * 60 + minutes; };
 const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 const getFirstDayOffset = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+const getTodayKey = () => {
+  const today = new Date();
+  return toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+};
 
 const buttonClass = "border-2 border-black bg-white font-bold uppercase tracking-[0.08em] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none";
 const inputClass = "mt-2 w-full rounded-none border-2 border-black bg-white px-4 py-3 text-sm font-medium text-black outline-none placeholder:text-neutral-500 focus:bg-neutral-100";
@@ -39,7 +43,12 @@ export default function PunchCardBooking() {
 
   useEffect(() => {
     const loadSlots = async () => {
-      const { data, error } = await createClient().from("time_slots").select("*").order("date").order("time_start");
+      const { data, error } = await createClient()
+        .from("time_slots")
+        .select("*")
+        .gte("date", getTodayKey())
+        .order("date")
+        .order("time_start");
       if (error) { setNotice("Jadwal belum bisa dimuat. Coba refresh halaman."); setIsLoading(false); return; }
       const loadedSlots = (data as TimeSlotRow[]).map(toTimeSlot);
       setSlots(loadedSlots);
