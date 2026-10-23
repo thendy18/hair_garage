@@ -54,6 +54,8 @@ const parseTime = (time: string) => {
 const shortPhone = (phone: string) =>
   phone.length > 11 ? `${phone.slice(0, 8)}xxxx` : phone;
 
+const csvCell = (value: string) => `"${value.replaceAll('"', '""')}"`;
+
 export default function AdminPage() {
   const today = new Date();
   const [slots, setSlots] = useState<TimeSlot[]>([]);
@@ -63,6 +65,9 @@ export default function AdminPage() {
   const [weekStart, setWeekStart] = useState(startOfWeek(today));
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [archiveSlots, setArchiveSlots] = useState<TimeSlot[]>([]);
+  const [hasExportedArchive, setHasExportedArchive] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
@@ -72,9 +77,6 @@ export default function AdminPage() {
 
   useEffect(() => {
     const loadSlots = async () => {
-      // Old sessions are no longer useful for the live schedule.
-      await createClient().from("time_slots").delete().lt("date", getTodayKey());
-
       const { data, error } = await createClient()
         .from("time_slots")
         .select("*")
@@ -193,6 +195,48 @@ export default function AdminPage() {
   const handleLogout = async () => {
     await createClient().auth.signOut();
     window.location.assign("/admin/login");
+  };
+
+  const loadArchive = async () => {
+    const { data, error } = await createClient()
+      .from("time_slots")
+      .select("*")
+      .lt("date", getTodayKey())
+      .order("date")
+      .order("time_start");
+    if (error) {
+      window.alert("Riwayat belum bisa dimuat.");
+      return;
+    }
+    setArchiveSlots((data as TimeSlotRow[]).map(toTimeSlot));
+    setHasExportedArchive(false);
+  };
+
+  const exportArchiveCsv = () => {
+    const bookedSlots = archiveSlots.filter((slot) => slot.isBooked);
+    const header = ["Nama", "WhatsApp", "Layanan", "Kategori", "Hairstylist", "Tanggal", "Jam", "Catatan", "Status"];
+    const rows = bookedSlots.map((slot) => [slot.clientName, slot.clientPhone, "Haircut", "-", "Thendy", slot.date, `${slot.timeStart}-${slot.timeEnd} WIB`, slot.clientNotes, "Selesai"].map(csvCell).join(","));
+    const csv = [header.map(csvCell).join(","), ...rows].join("\n");
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" }));
+    link.download = `hair-garage-archive-${getTodayKey()}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    setHasExportedArchive(true);
+  };
+
+  const deleteArchivedSlots = async () => {
+    if (!hasExportedArchive || !archiveSlots.length) return;
+    if (!window.confirm(`Hapus ${archiveSlots.length} slot lampau dari Supabase? Pastikan CSV sudah tersimpan.`)) return;
+    setIsArchiving(true);
+    const { error } = await createClient().from("time_slots").delete().in("id", archiveSlots.map((slot) => slot.id));
+    setIsArchiving(false);
+    if (error) {
+      window.alert("Arsip belum bisa dihapus. Coba lagi.");
+      return;
+    }
+    setArchiveSlots([]);
+    setHasExportedArchive(false);
   };
 
   const slotsForDate = (date: Date) =>
@@ -401,6 +445,18 @@ export default function AdminPage() {
               <p className="text-sm font-medium text-neutral-500">Pilih event atau tambahkan slot untuk melihat detail.</p>
             )}
           </div>
+
+          <section className="border-t-4 border-black bg-neutral-100 px-4 py-6 sm:px-8">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em]">Storage cleanup</p>
+                <h2 className="mt-1 text-xl font-black uppercase">Arsip riwayat lama</h2>
+                <p className="mt-2 max-w-xl text-sm font-medium text-neutral-600">Export booking lampau ke CSV terlebih dahulu. Slot hanya dapat dihapus setelah file CSV diekspor.</p>
+              </div>
+              <button type="button" onClick={() => void loadArchive()} className="border-2 border-black bg-white px-4 py-3 text-xs font-bold uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none">Cek riwayat</button>
+            </div>
+            {archiveSlots.length > 0 && <div className="mt-5 border-2 border-black bg-white p-4"><p className="text-sm font-bold">Ditemukan {archiveSlots.length} slot lampau, termasuk {archiveSlots.filter((slot) => slot.isBooked).length} booking customer.</p><div className="mt-4 flex flex-col gap-3 sm:flex-row"><button type="button" onClick={exportArchiveCsv} className="border-2 border-black bg-zinc-900 px-4 py-3 text-xs font-bold uppercase text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none">Export CSV</button>{hasExportedArchive && <button type="button" onClick={() => void deleteArchivedSlots()} disabled={isArchiving} className="border-2 border-black bg-white px-4 py-3 text-xs font-bold uppercase shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none disabled:cursor-wait disabled:opacity-60">{isArchiving ? "Menghapus..." : "Saya sudah menyimpan CSV → Hapus data terarsip"}</button>}</div></div>}
+          </section>
         </section>
       </div>
     </main>
